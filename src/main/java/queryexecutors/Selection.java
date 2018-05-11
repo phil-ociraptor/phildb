@@ -18,9 +18,9 @@ public class Selection implements Node {
   public Optional<List<ResultElement>> next() {
     Optional<List<ResultElement>> current = child.next();
     while (current.isPresent()) {
-      Boolean aBoolean =
+      Boolean matchesSelection =
           current.map(resultElements -> resultElements.stream().anyMatch(predicate)).get();
-      if (aBoolean) {
+      if (matchesSelection) {
         return current;
       } else {
         current = child.next();
