@@ -3,6 +3,7 @@ package queryexecutors;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
@@ -15,23 +16,40 @@ class NLJoinTest {
   public void shouldFindJoin() {
     Scan movies = new Scan("movies");
     Scan ratings = new Scan("ratings");
-    BiPredicate<List<ResultElement>, List<ResultElement>> theta = (left, right) -> {
-      Optional<ResultElement> leftElem = left.stream()
-          .filter(elem -> elem.value.equals("movieId"))
-          .findFirst();
-      Optional<ResultElement> rightElem = right.stream()
-          .filter(elem -> elem.value.equals("movieId"))
-          .findFirst();
-      return leftElem.map(l -> rightElem.map(r -> r.value.equals(l.value)).orElse(false)).orElse(false);
+    BiPredicate<Map, Map> theta = (left, right) -> {
+      String leftVal = (String) left.get("movieId");
+      String rightVal = (String) right.get("movieId");
+      return leftVal.equalsIgnoreCase(rightVal);
     };
     NLJoin join = new NLJoin(theta, movies, ratings);
 
-    Optional<List<ResultElement>> first = join.next();
-    first.ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
+    Optional<Map> first = join.next();
+    first.ifPresent(tuple -> System.out.println(tuple.toString()));
     assertTrue(first.isPresent());
 
-    Optional<List<ResultElement>> second = join.next();
-    second.ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
-    assertFalse(second.isPresent());
+    Optional<Map> second = join.next();
+    second.ifPresent(tuple -> System.out.println(tuple.toString()));
+    assertTrue(second.isPresent());
+  }
+
+  @Test
+  public void shouldJoinWithSelection() {
+    Scan movies = new Scan("movies");
+    Selection mediumCool = new Selection(tuple -> tuple.get("title").equalsIgnoreCase("Medium Cool (1969)"), movies);
+    Scan ratings = new Scan("ratings");
+    BiPredicate<Map, Map> theta = (left, right) -> {
+      String leftVal = (String) left.get("movieId");
+      String rightVal = (String) right.get("movieId");
+      return leftVal.equalsIgnoreCase(rightVal);
+    };
+    NLJoin join = new NLJoin(theta, mediumCool, ratings);
+
+    Optional<Map> first = join.next();
+    first.ifPresent(tuple -> System.out.println(tuple.toString()));
+    assertTrue(first.isPresent());
+
+    Optional<Map> second = join.next();
+    second.ifPresent(tuple -> System.out.println(tuple.toString()));
+    assertTrue(second.isPresent());
   }
 }

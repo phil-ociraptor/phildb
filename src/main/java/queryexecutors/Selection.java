@@ -1,7 +1,9 @@
 package queryexecutors;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class Selection implements Node {
@@ -9,18 +11,16 @@ public class Selection implements Node {
   private Node child;
   private Predicate predicate;
 
-  public Selection(Predicate<ResultElement> predicate, Node child) {
+  public Selection(Predicate<Map<String, String>> predicate, Node child) {
     this.predicate = predicate;
     this.child = child;
   }
 
   @Override
-  public Optional<List<ResultElement>> next() {
-    Optional<List<ResultElement>> current = child.next();
+  public Optional<Map> next() {
+    Optional<Map> current = child.next();
     while (current.isPresent()) {
-      Boolean matchesSelection =
-          current.map(resultElements -> resultElements.stream().anyMatch(predicate)).get();
-      if (matchesSelection) {
+      if (predicate.test(current.get())) {
         return current;
       } else {
         current = child.next();
@@ -31,10 +31,10 @@ public class Selection implements Node {
   }
 
   // sad panda, functionalNext() isn't tail-recursive
-  public Optional<List<ResultElement>> functionalNext() {
-    Optional<List<ResultElement>> current = child.next();
+  public Optional<Map> functionalNext() {
+    Optional<Map> current = child.next();
     return current
-        .map(resultElements -> resultElements.stream().anyMatch(predicate))
+        .map((Function<Map, Boolean>) predicate::test)
         .flatMap(tupleMatches -> tupleMatches ? current : this.next());
   }
 }

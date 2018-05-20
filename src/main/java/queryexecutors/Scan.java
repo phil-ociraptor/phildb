@@ -4,8 +4,9 @@ import com.google.common.collect.Streams;
 
 import java.io.*;
 import java.util.Arrays;
-import java.util.List;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,18 +21,19 @@ public class Scan implements Resettable {
     this.tableName = tableName;
   }
 
-  public Optional<List<ResultElement>> next() {
+  public Optional<Map> next() {
     if (buffer == null) {
       initialize();
     }
 
     return readNextLine()
         .map(
-            tuple -> {
-              Stream<String> values = Arrays.asList(tuple).stream();
-              Stream<String> fields = Arrays.asList(headers).stream();
-              Stream<ResultElement> result = Streams.zip(fields, values, ResultElement::new);
-              return result.collect(Collectors.toList());
+            values -> {
+              Map<String, String> tuple = new HashMap<>();
+              for (int i = 0; i < headers.length; i++) {
+                tuple.put(headers[i], values[i]);
+              }
+              return tuple;
             });
   }
 
@@ -75,32 +77,6 @@ public class Scan implements Resettable {
   public static void main(String[] args) {
     Scan movies = new Scan("movies");
     System.out.println();
-    movies
-        .next()
-        .ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
-    movies
-        .next()
-        .ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
-    movies
-        .next()
-        .ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
-    movies
-        .next()
-        .ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
-    movies
-        .next()
-        .ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
-    movies
-        .next()
-        .ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
-    movies
-        .next()
-        .ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
-    movies
-        .next()
-        .ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
-    movies
-        .next()
-        .ifPresent(result -> result.stream().forEach(slot -> System.out.println(slot.toString())));
+    movies.next().ifPresent(tuple -> tuple.forEach((key, value) -> System.out.println(key.toString() + value.toString())));
   }
 }
